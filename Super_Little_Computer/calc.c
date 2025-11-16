@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-long operation_lowPriority(char** s);
-long parenthesis_highPriority(char** s);
-long operation_highPriority(char** s);
+long long operation_lowPriority(char** s, int* error);
+long long parenthesis_highPriority(char** s, int* error);
+long long operation_highPriority(char** s, int* error);
 
 void skip_spaces(char** s) {
 	while (**s == ' ' || **s == '\t') {
@@ -12,24 +12,32 @@ void skip_spaces(char** s) {
 	}
 }
 
-long parenthesis_highPriority(char** s) {
+long long parenthesis_highPriority(char** s, int* error) {
+	if(*error != 0){
+		return 0;
+	}
 	skip_spaces(s);
 	if (**s == '(') {
 		(*s)++;
 		skip_spaces(s);
-		long x = operation_lowPriority(s);
+		long long x = operation_lowPriority(s, error);
+		if(*error != 0){
+			return 0;
+		}
 		skip_spaces(s);
 		if (**s != ')') {
 			fwrite("Sintax Error\n", 1, 13, stdout);
-			exit(1);
+			*error = 1;
+			return 0;
 		}
-		else { 
+		else{
 			(*s)++;
 			return x;
 		}
 	}
 	else if ((**s == '-') || (**s >= '0' && **s <= '9')) {
-		int y = 0, sign = 0;
+		long long y = 0;
+		int sign = 0;
 		char* t = *s;
 		if (*t == '-') {
 			sign = 1;
@@ -49,29 +57,45 @@ long parenthesis_highPriority(char** s) {
 	}
 	else {
 		fwrite("Sintax Error\n", 1, 13, stdout);
-		exit(1);
+		*error = 1;
+		return 0;
 	}
-	return 1;
+	return 0;
 }
-long operation_highPriority(char **s) {
+long long operation_highPriority(char **s, int* error) {
+	if(*error != 0){
+		return 0;
+	}
 	skip_spaces(s);
-	long x = parenthesis_highPriority(s);
+	long long x = parenthesis_highPriority(s, error);
+	if(*error != 0){
+		return 0;
+	}
 	for (;;) {
 		skip_spaces(s);
 		if (**s == '*') {
 			(*s)++;
 			skip_spaces(s);
-			x = x * parenthesis_highPriority(s);
+			long long y = parenthesis_highPriority(s, error);
+			if(*error != 0){
+				return 0;
+			}
+			x = x * y;
 			skip_spaces(s);
 		}
 		if (**s == '/') {
 			(*s)++;
 			skip_spaces(s);
-			if(parenthesis_highPriority(s) == 0) {
-				fwrite("Math Error\n", 1, 11, stdout);
-				exit(2);
+			long long k = parenthesis_highPriority(s, error);
+			if(*error != 0){
+				return 0;
 			}
-			x = x / parenthesis_highPriority(s);
+			if(k == 0) {
+				fwrite("Math Error\n", 1, 11, stdout);
+				*error = 1;
+				return 0;
+			}
+			x = x / k;
 			skip_spaces(s);
 		}
 		else {
@@ -80,21 +104,35 @@ long operation_highPriority(char **s) {
 	}
 	return x;
 }
-long operation_lowPriority(char** s) {
+long long operation_lowPriority(char** s, int* error) {
+	if(*error != 0){
+			return 0;
+	}
 	skip_spaces(s);
-	long x = operation_highPriority(s);
+	long long x = operation_highPriority(s, error);
+	if(*error != 0){
+			return 0;
+	}
 	for (;;) {
 		skip_spaces(s);
 		if (**s == '+') {
 			(*s)++;
 			skip_spaces(s);
-			x = x + operation_highPriority(s);
+			long long y = operation_highPriority(s, error);
+			if(*error != 0){
+				return 0;
+			}
+			x = x + y;
 			skip_spaces(s);
 		}
 		if (**s == '-') {
 			(*s)++;
 			skip_spaces(s);
-			x = x - operation_highPriority(s);
+			long long k = operation_highPriority(s, error);
+			if(*error != 0){
+				return 0;
+			}
+			x = x - k;
 			skip_spaces(s);
 		}
 		else {
@@ -102,4 +140,5 @@ long operation_lowPriority(char** s) {
 		}
 	}
 	return x;
+
 }
